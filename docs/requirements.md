@@ -35,16 +35,11 @@ Aplicación de gestión de tareas mediante comandos de terminal y una interfaz i
 
 | ID | Requerimiento |
 |----|---------------|
-| RF-14 | El sistema debe disponer de usuarios con un identificador numérico positivo incremental, un nombre y una contraseña de acceso. Los nombres de usuario deben ser únicos, sin espacios ni caracteres especiales. Su validación de unicidad y su uso para identificar al usuario no deben distinguir entre mayúsculas y minúsculas. |
-| RF-15 | El sistema debe autenticar al usuario mediante su nombre y contraseña para permitir el acceso a la aplicación. |
-| RF-24 | El sistema debe permitir únicamente a los administradores crear, consultar, modificar y eliminar usuarios, salvo la creación del administrador inicial mediante el comando habilitado para ese fin. |
+| RF-14 | El sistema debe disponer de usuarios con un identificador numérico positivo incremental, un nombre y una contraseña de acceso. Los nombres de usuario deben ser únicos y admitir únicamente letras de A a Z, en mayúsculas o minúsculas, y dígitos del 0 al 9, sin espacios, caracteres especiales, acentos, ñ ni otros alfabetos. Su validación de unicidad y su uso para identificar al usuario no deben distinguir entre mayúsculas y minúsculas. |
+| RF-15 | El sistema debe autenticar al usuario mediante su nombre y contraseña y denegar el acceso si su cuenta está bloqueada. Los comandos deben autenticar cada invocación; la interfaz interactiva debe autenticar al entrar y conservar la identidad en memoria. |
+| RF-24 | El sistema debe permitir únicamente a los administradores crear, consultar, modificar y eliminar usuarios, salvo la creación del administrador inicial mediante el comando habilitado para ese fin. Para eliminar un usuario, debe intentar el borrado en la base de datos; si esta lo rechaza por asociaciones de datos, como una restricción de clave foránea, debe informar al administrador que no se puede eliminar por estar asociado a otros datos. |
 | RF-26 | El sistema debe disponer de un comando para crear el administrador inicial únicamente cuando no exista un administrador. El comando debe solicitar el nombre y la contraseña de la nueva cuenta y establecerla como administradora sin exigir una autenticación previa. |
-
-**Consideraciones pendientes:**
-
-| ID | Consideración |
-|----|---------------|
-| RF-14 | Falta precisar el conjunto de caracteres admitidos en los nombres de usuario, en particular si se permiten letras acentuadas, la letra ñ u otros alfabetos. |
+| RF-29 | El sistema debe permitir únicamente a los administradores bloquear y desbloquear cuentas de usuario. |
 
 ### Roles y permisos
 
@@ -72,7 +67,7 @@ Aplicación de gestión de tareas mediante comandos de terminal y una interfaz i
 
 | ID | Requerimiento |
 |----|---------------|
-| RF-09 | El sistema debe generar y almacenar en disco logs de las operaciones de guardado, edición y eliminación de datos. Cada registro debe incluir fecha y hora, severidad, identificador del usuario, operación, entidad afectada y su identificador, resultado y una descripción breve. Para las tareas, debe incluir también el identificador del proyecto al que pertenecen. Los errores deben registrarse con su detalle, sin exponer contraseñas ni otros datos sensibles. La generación de logs debe mantenerse también durante la actividad de los administradores. |
+| RF-09 | El sistema debe generar y almacenar en disco logs de las operaciones de guardado, edición y eliminación de datos, después de confirmar los cambios o conocer el error. Cada registro debe incluir fecha y hora, severidad, identificador del usuario, operación, entidad afectada y su identificador, resultado y una descripción breve. Para las tareas, debe incluir también el identificador del proyecto al que pertenecen. Los errores deben registrarse con su detalle, sin exponer contraseñas ni otros datos sensibles. La generación de logs debe mantenerse también durante la actividad de los administradores y no debe desactivarse mediante filtros de diagnóstico. Un fallo del log no debe revertir la acción realizada. |
 
 ## Requerimientos no funcionales
 
@@ -80,11 +75,33 @@ Aplicación de gestión de tareas mediante comandos de terminal y una interfaz i
 
 | ID | Requerimiento |
 |----|---------------|
-| RNF-01 | El sistema debe almacenar las contraseñas mediante un hash seguro para contraseñas, sin conservarlas en texto plano. |
-| RNF-02 | La arquitectura debe exigir un usuario autenticado como condición previa para ejecutar cualquier operación de consulta o persistencia de datos, tanto desde comandos como desde la aplicación interactiva. La única excepción debe ser la creación del administrador inicial mediante el comando habilitado cuando no exista un administrador. |
+| RNF-01 | El sistema debe utilizar Argon2 para generar y verificar los hashes de contraseñas, sin conservar las contraseñas en texto plano. |
+| RNF-02 | La arquitectura debe exigir un usuario autenticado y comprobar su identidad, estado de bloqueo y permisos actuales antes de ejecutar cada operación de consulta o persistencia de datos, tanto desde comandos como desde la aplicación interactiva. Debe impedir la operación si esas comprobaciones no permiten realizarla. La única excepción debe ser la creación del administrador inicial mediante el comando habilitado cuando no exista un administrador. |
+| RNF-09 | El sistema debe excluir contraseñas y hashes de los resultados entregados a CLI y TUI, y excluir las credenciales de los logs. |
 
 ### Persistencia
 
 | ID | Requerimiento |
 |----|---------------|
-| RNF-03 | El sistema debe almacenar en una base de datos los usuarios, proyectos, tareas y permisos de acceso, conservando sus datos y cambios entre ejecuciones. |
+| RNF-03 | El sistema debe almacenar los usuarios, proyectos, tareas y permisos de acceso en un archivo SQLite local mediante SeaORM, conservando sus datos y cambios entre ejecuciones. Las ejecuciones que compartan datos deben utilizar el mismo archivo; el sistema no debe depender de un servidor central. |
+| RNF-04 | El sistema debe ejecutar los cambios agrupados en una transacción como una unidad y revertir los cambios de esa transacción si falla. La auditoría debe ser independiente de la transacción de datos. |
+| RNF-08 | El sistema debe mantener cambios versionados del esquema de SQLite mediante migraciones ejecutadas con `sea-orm-migration`. |
+
+### Ejecución y presentación
+
+| ID | Requerimiento |
+|----|---------------|
+| RNF-05 | El sistema debe ejecutar las operaciones asíncronas mediante Tokio y realizar las operaciones de datos, el trabajo costoso y la escritura de logs sin bloquear el dibujo de la interfaz interactiva ni interferir con su presentación. |
+
+### Configuración y fechas
+
+| ID | Requerimiento |
+|----|---------------|
+| RNF-06 | El sistema debe obtener las fechas del sistema, almacenarlas en UTC mediante `time` y formatearlas al mostrarlas. |
+| RNF-10 | El sistema debe utilizar rutas configurables para el archivo SQLite y los archivos de logs. |
+
+### Organización de la aplicación
+
+| ID | Requerimiento |
+|----|---------------|
+| RNF-07 | El sistema debe implementarse en Rust con un único ejecutable `task-manager` para CLI y TUI, que utilicen los mismos casos de uso de `task-manager-app`. Las reglas de negocio deben residir en `task-manager-core`, sin conocimiento de la terminal ni la base de datos. `task-manager-app` debe definir las interfaces de infraestructura y `task-manager-inf` implementarlas, convirtiendo los modelos y errores de SeaORM a tipos de la aplicación. |
