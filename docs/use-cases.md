@@ -16,7 +16,7 @@ En todos los casos, los proyectos se representan y seleccionan mediante su sigla
 
 ### Autenticación y modos de uso
 
-Todos los casos deben estar disponibles mediante comandos y mediante la aplicación interactiva (RF-10). CU-01 incluye el comando de inicialización exigido por RF-26; no se prescribe el mecanismo interactivo para esa misma operación.
+Los casos CU-02 a CU-16 deben estar disponibles mediante comandos y mediante la aplicación interactiva (RF-10). CU-01 está disponible exclusivamente mediante el comando de inicialización exigido por RF-26, únicamente cuando no exista un administrador.
 
 Antes de cualquier consulta o persistencia debe haberse ejecutado satisfactoriamente [CU-02](use-cases/CU-02.md). En comandos, esta autenticación se realiza en cada invocación con `--user` y `--pass`. La TUI autentica al entrar y conserva la identidad en memoria. Antes de cada operación, ambos modos comprueban la identidad, el estado de bloqueo y los permisos actuales; una autenticación anterior no permite omitir esas comprobaciones. CU-01 es la única excepción a la autenticación previa. Sus comprobaciones de inicialización forman parte de esa excepción.
 
@@ -24,11 +24,11 @@ Si la autenticación falla, la cuenta está bloqueada o los permisos actuales no
 
 ### Persistencia y registro de actividad
 
-Los usuarios, proyectos, tareas y permisos se conservan en un archivo SQLite local mediante SeaORM; las ejecuciones que compartan datos utilizan el mismo archivo (RNF-03). Los casos que guardan, editan o eliminan datos incluyen la generación de logs en disco, también si actúa un administrador (RF-09). Los eventos de auditoría se emiten después de confirmar los cambios o conocer el error y los filtros de diagnóstico no los desactivan.
+Los usuarios, proyectos, tareas y permisos se conservan en un archivo SQLite local mediante SeaORM; las ejecuciones que compartan datos utilizan el mismo archivo (RNF-03). Los casos que guardan, editan o eliminan datos incluyen la generación de logs en disco, también si actúa un administrador (RF-09). CU-01 es la excepción y no genera auditoría, tanto si crea la cuenta como si falla. Los eventos de auditoría de los demás casos se emiten después de confirmar los cambios o conocer el error y los filtros de diagnóstico no los desactivan.
 
 Cada registro incluye fecha y hora, severidad, identificador del usuario, operación, entidad e identificador afectados, resultado y descripción breve; cuando afecta a una tarea incluye también el identificador del proyecto. Los errores se registran con su detalle sin contraseñas ni otros datos sensibles. La generación de logs es comportamiento interno de esos casos, no un caso de uso independiente. Los requerimientos no definen una operación para consultar logs.
 
-Los flujos describen el resultado satisfactorio. Un error de persistencia debe registrarse conforme a RF-09 y no constituye un resultado satisfactorio del caso. Si falla una transacción, se revierten sus cambios (RNF-04). La auditoría es independiente: un fallo del log no revierte la acción realizada. No se especifican reintentos ni otros mecanismos de recuperación.
+Los flujos describen el resultado satisfactorio. Un error de persistencia debe registrarse conforme a RF-09, salvo en CU-01, y no constituye un resultado satisfactorio del caso. Si falla una transacción, se revierten sus cambios (RNF-04). La auditoría es independiente: un fallo del log no revierte la acción realizada. No se especifican reintentos ni otros mecanismos de recuperación.
 
 Las operaciones de datos, el trabajo costoso y la escritura de logs no bloquean el dibujo ni interfieren con la presentación de la TUI (RNF-05). Las fechas se almacenan en UTC y se formatean al mostrarlas (RNF-06).
 
@@ -82,8 +82,8 @@ Esta tabla identifica los casos que materializan cada requerimiento. Las reglas 
 | RF-06 | CU-14 |
 | RF-07 | CU-13, CU-14 |
 | RF-08 | CU-13, CU-14 |
-| RF-09 | CU-01, CU-03, CU-05, CU-06, CU-07, CU-09, CU-10, CU-11, CU-12, CU-14, CU-15, CU-16 |
-| RF-10 | CU-01 a CU-16; regla compartida de modos de uso |
+| RF-09 | CU-03, CU-05, CU-06, CU-07, CU-09, CU-10, CU-11, CU-12, CU-14, CU-15, CU-16; CU-01 está exento de auditoría |
+| RF-10 | CU-02 a CU-16 en ambos modos; CU-01 exclusivamente mediante comando |
 | RF-11 | CU-07 |
 | RF-12 | CU-07, CU-08, CU-09 |
 | RF-13 | CU-08, CU-13 |
@@ -107,11 +107,11 @@ Esta tabla identifica los casos que materializan cada requerimiento. Las reglas 
 | RNF-02 | CU-01, CU-02; condición compartida de consulta y persistencia |
 | RNF-03 | Casos de consulta y modificación de usuarios, proyectos, tareas y permisos |
 | RNF-04 | Casos que modifican datos; regla compartida de transacciones y auditoría |
-| RNF-05 | CU-01 a CU-16 en la TUI; regla compartida de ejecución y presentación |
+| RNF-05 | CU-02 a CU-16 en la TUI; regla compartida de ejecución y presentación |
 | RNF-06 | CU-12 y logs de las operaciones que modifican datos |
-| RNF-07 | CU-01 a CU-16; implementación compartida por CLI y TUI |
+| RNF-07 | CU-01 a CU-16 en `app`; CLI y TUI comparten CU-02 a CU-16 |
 | RNF-08 | Restricción de infraestructura; no representa un objetivo independiente de un actor |
 | RNF-09 | CU-01 a CU-16; exclusión de contraseñas y hashes de resultados y de credenciales de logs |
 | RNF-10 | Restricción de configuración de infraestructura; no se define un flujo para modificar rutas |
 
-Los 29 requerimientos funcionales están relacionados con casos de uso. El bloqueo y desbloqueo se documentan en CU-05 y el rechazo del borrado por asociaciones de datos en CU-06. Las consideraciones de cada caso identifican decisiones pendientes; no añaden reglas al documento de requerimientos.
+Los 29 requerimientos funcionales están relacionados con casos de uso. El bloqueo y desbloqueo se documentan en CU-05 y el rechazo del borrado por asociaciones de datos en CU-06. Las consideraciones de cada caso aclaran su alcance sin añadir reglas al documento de requerimientos.

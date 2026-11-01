@@ -32,17 +32,13 @@ Aplicación de gestión de tareas mediante comandos de terminal y una interfaz i
 |----|---------------|
 | RF-11 | El sistema debe permitir crear proyectos. |
 | | • Cada proyecto debe tener un identificador numérico positivo incremental, un nombre y una sigla. |
+| | • El nombre debe contener únicamente letras de A a Z, en mayúsculas o minúsculas, y dígitos del 0 al 9, sin espacios, caracteres especiales, acentos, ñ ni otros alfabetos. |
 | | • Al crear un proyecto, debe concederse acceso automáticamente a su creador. |
 | RF-12 | El sistema debe utilizar la sigla para representar y seleccionar los proyectos. |
-| | • Las siglas deben ser únicas, sin espacios ni caracteres especiales. |
+| | • Las siglas deben ser únicas y admitir los mismos caracteres que el nombre del proyecto. |
+| | • El nombre y la sigla del proyecto no deben estar vacíos. |
 | | • Su validación de unicidad y su selección no deben distinguir entre mayúsculas y minúsculas. |
-| RF-21 | El sistema debe eliminar todas las tareas de un proyecto cuando se elimine dicho proyecto. |
-
-**Consideraciones pendientes:**
-
-| ID | Consideración |
-|----|---------------|
-| RF-12 | Falta precisar el conjunto de caracteres admitidos en las siglas, en particular si se permiten letras acentuadas, la letra ñ u otros alfabetos. |
+| RF-21 | El sistema debe eliminar todas las tareas y todos los permisos de acceso de un proyecto cuando se elimine dicho proyecto, en una misma transacción. |
 
 ### Usuarios y autenticación
 
@@ -67,6 +63,7 @@ Aplicación de gestión de tareas mediante comandos de terminal y una interfaz i
 | | • El comando debe estar disponible únicamente cuando no exista un administrador. |
 | | • Debe solicitar el nombre y la contraseña de la nueva cuenta. |
 | | • Debe establecer la cuenta como administradora sin exigir una autenticación previa. |
+| | • La inicialización debe estar disponible exclusivamente mediante este comando y no debe generar auditoría, tanto si crea la cuenta como si falla. |
 | RF-29 | El sistema debe permitir únicamente a los administradores bloquear y desbloquear cuentas de usuario. |
 
 ### Roles y permisos
@@ -91,6 +88,9 @@ Aplicación de gestión de tareas mediante comandos de terminal y una interfaz i
 | RF-25 | El sistema debe permitir conceder y revocar permisos de acceso a los proyectos según el rol. |
 | | • Los administradores deben poder gestionar esos permisos en cualquier proyecto. |
 | | • Los líderes de proyecto deben poder gestionarlos en los proyectos a los que tengan acceso. |
+| | • Quien tenga autorización para gestionar los accesos puede revocar cualquier permiso explícito, incluido el propio o el del creador del proyecto. |
+| | • Cada par de usuario y proyecto debe tener como máximo un permiso de acceso, garantizado por una restricción de unicidad en la base de datos. |
+| | • Ser encargado de una tarea no concede acceso al proyecto: si el usuario pierde ese acceso, no puede consultar ni modificar el proyecto o sus tareas. El administrador conserva su acceso global por rol. |
 
 ### Interfaz de terminal y visualización
 
@@ -104,7 +104,7 @@ Aplicación de gestión de tareas mediante comandos de terminal y una interfaz i
 | | • Amarillo para «En curso». |
 | | • Verde para «Completado». |
 | RF-08 | El sistema debe mostrar el número de prioridad en gris para los valores del 1 al 3, amarillo del 4 al 7 y rojo del 8 al 10. |
-| RF-10 | El sistema debe ofrecer todas sus operaciones tanto mediante comandos de terminal como mediante la aplicación interactiva en terminal. |
+| RF-10 | El sistema debe ofrecer sus operaciones tanto mediante comandos de terminal como mediante la aplicación interactiva en terminal, excepto la creación del administrador inicial, disponible solo mediante su comando. |
 | RF-13 | El sistema debe permitir visualizar varios proyectos y mostrar las tareas de un solo proyecto seleccionado a la vez. |
 | RF-23 | El sistema debe autenticar las credenciales de cada comando de terminal antes de ejecutar la operación solicitada. |
 | | • Cada comando de la aplicación debe exigir los parámetros `--user` y `--pass`. |
@@ -115,6 +115,7 @@ Aplicación de gestión de tareas mediante comandos de terminal y una interfaz i
 | ID | Requerimiento |
 |----|---------------|
 | RF-09 | El sistema debe generar y almacenar en disco logs de las operaciones de guardado, edición y eliminación de datos. |
+| | • Se exceptúa la inicialización del administrador mediante RF-26, que no debe generar auditoría. |
 | | • Los logs deben generarse después de confirmar los cambios o conocer el error. |
 | | • Cada registro debe incluir fecha y hora, severidad, identificador del usuario, operación, entidad afectada y su identificador, resultado y una descripción breve. |
 | | • Para las tareas, debe incluir también el identificador del proyecto al que pertenecen. |

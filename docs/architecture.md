@@ -60,7 +60,7 @@ CLI y TUI se encargan de la interacción y la presentación. Las reglas comparti
 
 El ejecutable carga la configuración, prepara la infraestructura e inicia CLI o TUI.
 
-Los comandos autentican cada invocación. La TUI autentica al entrar y conserva la identidad en memoria. La creación del administrador inicial tiene una entrada específica sin autenticación previa.
+Los comandos autentican cada invocación. La TUI autentica al entrar y conserva la identidad en memoria. La creación del administrador inicial se ofrece exclusivamente mediante un comando sin autenticación previa, disponible solo cuando no exista ningún administrador y sin generar auditoría.
 
 Cada operación de negocio sigue estos pasos:
 
@@ -77,11 +77,11 @@ Cada operación de negocio sigue estos pasos:
 
 Los errores de persistencia se convierten en errores de aplicación antes de llegar a CLI o TUI.
 
-Las migraciones se mantienen en `inf` y se ejecutan con `sea-orm-migration`.
+Las migraciones se mantienen en `inf` y se ejecutan con `sea-orm-migration`. La tabla de permisos garantiza la unicidad del par de usuario y proyecto. La eliminación de un proyecto incluye sus tareas y todos sus permisos de acceso en una misma transacción.
 
 ## Auditoría y logs
 
-Los logs se emiten después de la acción: tras confirmar los cambios o conocer el error.
+Los logs se emiten después de la acción: tras confirmar los cambios o conocer el error. La inicialización del administrador mediante CU-01 no genera auditoría, tanto si crea la cuenta como si falla.
 
 `tracing` emite el evento, `tracing-subscriber` le da formato y `tracing-appender` lo escribe en un archivo desde otro hilo.
 
