@@ -7,7 +7,8 @@
         - [x] Crear el ejecutable `task-manager` y los crates `task-manager-core`, `task-manager-app` y `task-manager-inf` con edición Rust 2024.
         - [x] Declarar las dependencias entre crates conforme a la arquitectura: ejecutable hacia `app` e `inf`, `app` hacia `core` e `inf` hacia ambos.
     - [ ] **Hito: Entidades y reglas de dominio validadas**
-        - [ ] Precisar los caracteres admitidos en las siglas de proyectos antes de implementar su validación (RF-12).
+        - [ ] Actualizar los requerimientos y casos de uso con las decisiones confirmadas sobre nombres y siglas de proyectos, unicidad y revocación de permisos, eliminación de proyectos e inicialización exclusiva por comando sin auditoría.
+        - [ ] Implementar la validación del nombre y la sigla del proyecto admitiendo únicamente letras de A a Z, en mayúsculas o minúsculas, y dígitos del 0 al 9, sin acentos ni ñ (RF-12).
         - [ ] Modelar usuarios con identificador, nombre, contraseña protegida, bloqueo y tres indicadores booleanos de rol (RF-14, RF-16, RF-29).
         - [ ] Implementar la validación de nombres de usuario con letras ASCII y dígitos, y su comparación sin distinguir mayúsculas (RF-14).
         - [ ] Implementar las capacidades acumulativas de administrador, líder y contribuyente aunque los indicadores inferiores estén desactivados (RF-16).
@@ -17,19 +18,18 @@
         - [ ] Probar nombres válidos e inválidos, comparación de nombres y siglas, combinaciones de roles y límites de estado y prioridad.
     - [ ] **Hito: Persistencia SQLite y transacciones verificadas**
         - [ ] Definir en `app` las interfaces de persistencia, transacciones, contraseñas y auditoría, y resultados sin contraseñas ni hashes (RNF-07, RNF-09).
-        - [ ] Precisar el tratamiento de los permisos al eliminar un proyecto antes de definir sus relaciones de borrado (CU-10).
         - [ ] Crear en `inf` las migraciones versionadas de usuarios, proyectos, tareas y permisos con `sea-orm-migration` (RNF-08).
             - [ ] Establecer identificadores positivos incrementales para usuarios y proyectos, y numeración de tareas independiente por proyecto.
             - [ ] Establecer unicidad de nombres de usuario y siglas sin distinguir mayúsculas, y relaciones para creador, encargado y accesos.
-            - [ ] Establecer las relaciones que permitan eliminar las tareas junto con su proyecto y detectar asociaciones que impidan borrar usuarios.
+            - [ ] Establecer una restricción de unicidad en SQLite para cada par de usuario y proyecto en la tabla de permisos de acceso.
+            - [ ] Establecer las relaciones que permitan eliminar las tareas y los permisos de acceso junto con su proyecto y detectar asociaciones que impidan borrar usuarios.
         - [ ] Implementar los adaptadores SeaORM y convertir sus modelos y errores a tipos de aplicación (RNF-03, RNF-07).
         - [ ] Implementar la ejecución atómica de cambios agrupados y su reversión ante fallos (RNF-04).
         - [ ] Configurar las rutas del archivo SQLite local y los archivos de logs desde el ejecutable (RNF-10).
         - [ ] Implementar la obtención de fechas del sistema y su almacenamiento en UTC mediante `time` (RNF-06).
         - [ ] Probar migraciones sobre una base nueva y una existente, conservación de datos al reabrir el archivo, unicidad, numeración y reversión de transacciones.
     - [ ] **Hito: Auditoría en disco independiente de las transacciones verificada**
-        - [ ] Precisar la atribución del usuario en los logs de inicialización sin identidad autenticada previa (CU-01).
-        - [ ] Implementar eventos de guardado, edición y eliminación emitidos después de confirmar los cambios o conocer el error (RF-09).
+        - [ ] Implementar eventos de guardado, edición y eliminación emitidos después de confirmar los cambios o conocer el error, exceptuando la inicialización de CU-01, que no genera auditoría (RF-09).
         - [ ] Incluir fecha y hora, severidad, usuario, operación, entidad, identificador, resultado y descripción; añadir el proyecto cuando se trate de una tarea.
         - [ ] Implementar la escritura en disco mediante `tracing`, `tracing-subscriber` y `tracing-appender`, independiente de los filtros de diagnóstico y de la transacción de datos.
         - [ ] Excluir contraseñas, hashes y otros datos sensibles de resultados y logs, conservando el detalle seguro de los errores (RNF-09).
@@ -38,8 +38,9 @@
 - [ ] **Objetivo: Habilitar el acceso autenticado y comprobar los permisos actuales**
     - [ ] **Hito: Administrador inicial y autenticación con Argon2 validados**
         - [ ] Implementar en `inf` la generación y verificación de hashes Argon2 sin persistir contraseñas en texto plano (RNF-01).
-        - [ ] Implementar la creación del administrador inicial únicamente cuando no exista ningún administrador, sin autenticación previa y con auditoría (CU-01, RF-26).
+        - [ ] Implementar la creación del administrador inicial únicamente cuando no exista ningún administrador, sin autenticación previa ni auditoría y accesible solo mediante comando (CU-01, RF-26).
         - [ ] Probar la creación inicial, el rechazo de nombres inválidos o duplicados y la indisponibilidad de la inicialización cuando ya existe un administrador.
+        - [ ] Probar que la inicialización no genere auditoría, tanto si crea la cuenta como si falla.
         - [ ] Implementar la autenticación por nombre sin distinguir mayúsculas, verificación de contraseña y rechazo de cuentas bloqueadas (CU-02, RF-15).
         - [ ] Probar credenciales válidas, contraseñas incorrectas, usuarios inexistentes y cuentas bloqueadas.
     - [ ] **Hito: Consultas y cambios protegidos por identidad y permisos vigentes**
@@ -61,14 +62,16 @@
         - [ ] Implementar la creación de proyectos por líderes y administradores, concediendo acceso explícito al creador en la misma transacción, también si es administrador (CU-07, RF-11).
         - [ ] Implementar la consulta de proyectos disponibles y la selección directa o desde el listado mediante sigla sin distinguir mayúsculas (CU-08, RF-12, RF-13).
         - [ ] Implementar la modificación de nombre y sigla por líderes con acceso o administradores (CU-09, RF-19).
-        - [ ] Implementar la eliminación del proyecto y todas sus tareas en una transacción, aplicando la decisión sobre permisos y auditando cada eliminación (CU-10, RF-21).
-        - [ ] Probar siglas inválidas o duplicadas, selección inexistente, aislamiento entre proyectos y acceso global del administrador.
-        - [ ] Probar creación con acceso automático, modificación y eliminación con tareas, sus auditorías y la reversión ante un fallo de la transacción.
+        - [ ] Implementar la eliminación del proyecto, todas sus tareas y todos sus permisos de acceso en una transacción, auditando cada eliminación (CU-10, RF-21).
+        - [ ] Probar nombres y siglas con caracteres válidos e inválidos, siglas duplicadas, selección inexistente, aislamiento entre proyectos y acceso global del administrador.
+        - [ ] Probar creación con acceso automático, modificación y eliminación con tareas y permisos, sus auditorías y la reversión ante un fallo de la transacción.
     - [ ] **Hito: Concesión y revocación de accesos validadas**
-        - [ ] Precisar el tratamiento del encargado que pierde acceso, la revocación del propio acceso o del creador y las solicitudes sobre permisos ya concedidos o inexistentes (CU-11).
         - [ ] Implementar la concesión y revocación de permisos por líderes con acceso o administradores, sin cambiar los roles del destinatario (CU-11, RF-25).
-        - [ ] Aplicar las decisiones de revocación y conservar el acceso global de los administradores aunque se retire un permiso explícito.
-        - [ ] Probar concesión, revocación, solicitudes repetidas según lo acordado y rechazo por rol o acceso insuficientes, con su auditoría.
+        - [ ] Permitir revocar cualquier permiso de acceso explícito, incluido el propio o el del creador, cuando el actor tenga autorización para gestionar los accesos del proyecto.
+        - [ ] Conservar el acceso global de los administradores aunque se retire un permiso explícito.
+        - [ ] Probar concesión y revocación, rechazo de permisos duplicados por la restricción de SQLite y rechazo por rol o acceso insuficientes, con su auditoría.
+        - [ ] Probar la revocación del acceso del creador y del propio actor autorizado, y el rechazo de operaciones posteriores cuando se pierda el acceso requerido.
+        - [ ] Probar que ser encargado de una tarea no permita consultar ni modificar el proyecto o sus tareas tras perder el acceso al proyecto.
 - [ ] **Objetivo: Gestionar las tareas y sus encargados dentro de cada proyecto**
     - [ ] **Hito: Creación, consulta, modificación y eliminación de tareas validadas**
         - [ ] Implementar la creación con estado y prioridad explícitos, numeración independiente por proyecto, fecha automática en UTC, creador y asignación inicial al creador (CU-12, RF-01, RF-22, RF-28).
@@ -84,36 +87,27 @@
         - [ ] Probar que un contribuyente sin capacidades superiores quede asignado al crear y no pueda cambiar ni retirar encargados al crear o modificar tareas.
         - [ ] Probar cambios y retirada autorizados, rechazo de destinatarios sin acceso y conservación de la asignación anterior ante errores.
         - [ ] Probar el rechazo del borrado de usuarios asociados a proyectos, tareas o permisos cuando SQLite lo impida, con reversión, mensaje y auditoría de CU-06.E2.
-- [ ] **Objetivo: Ofrecer las mismas operaciones mediante comandos y una interfaz interactiva**
+- [ ] **Objetivo: Ofrecer las operaciones mediante CLI y TUI, con inicialización exclusiva por comando**
     - [ ] **Hito: Operaciones completas disponibles mediante CLI autenticada**
         - [ ] Inicializar Tokio, cargar la configuración y conectar infraestructura y casos de uso en el único ejecutable `task-manager` (RNF-05, RNF-07).
-        - [ ] Implementar con `clap` el comando de inicialización que solicite nombre y contraseña sin exigir credenciales previas.
+        - [ ] Implementar con `clap` el comando de inicialización que solicite nombre y contraseña sin exigir credenciales previas y rechace la creación si ya existe un administrador.
         - [ ] Implementar comandos para CU-02 a CU-16 que exijan `--user` y `--pass` y autentiquen cada invocación (RF-23).
         - [ ] Presentar proyectos por sigla, resultados y errores de aplicación, y fechas formateadas sin exponer contraseñas ni hashes.
         - [ ] Implementar en la salida de tareas las tres secciones y los colores de estado en nombre y estado: gris, amarillo y verde (RF-07).
         - [ ] Aplicar gris a prioridades del 1 al 3, amarillo del 4 al 7 y rojo del 8 al 10; reflejar cambios de sección y orden tras editar (RF-08, RF-06).
         - [ ] Probar comandos de todos los casos de uso, ausencia de parámetros de autenticación, autenticación por invocación, colores y presentación de errores.
     - [ ] **Hito: Operaciones completas disponibles en una TUI que permanece receptiva**
-        - [ ] Precisar el mecanismo interactivo para crear el administrador inicial sin autenticación previa cuando no exista un administrador (RF-10, CU-01).
-        - [ ] Implementar con `ratatui` y `ratatui::crossterm` la inicialización interactiva acordada y la autenticación de entrada, conservando únicamente la identidad en memoria.
+        - [ ] Implementar con `ratatui` y `ratatui::crossterm` la autenticación de entrada, conservando únicamente la identidad en memoria.
         - [ ] Implementar las interacciones de usuarios, proyectos, accesos, tareas y encargados mediante los mismos casos de uso de `app` (RF-10).
         - [ ] Mostrar varios proyectos por sigla y las tareas de uno seleccionado, con agrupación, orden, colores y fechas formateadas.
         - [ ] Actualizar sección, orden y colores de las tareas después de modificar su estado, prioridad o nombre.
         - [ ] Ejecutar operaciones de datos y trabajo costoso sin bloquear el dibujo, y recibir sus resultados en el estado de la interfaz (RNF-05).
-        - [ ] Verificar los flujos interactivos de CU-01 a CU-16 y el rechazo de operaciones tras bloqueo, eliminación de cuenta o retirada de permisos durante una sesión abierta.
+        - [ ] Verificar los flujos interactivos de CU-02 a CU-16 y el rechazo de operaciones tras bloqueo, eliminación de cuenta o retirada de permisos durante una sesión abierta.
         - [ ] Verificar que la interfaz siga dibujándose durante acceso a datos, cálculo de hashes y escritura de logs, sin interferencias en pantalla.
 - [ ] **Objetivo: Confirmar el funcionamiento conjunto conforme al alcance documentado**
     - [ ] **Hito: CLI y TUI verificadas sobre datos persistentes y permisos compartidos**
-        - [ ] Verificar con ambos modos el flujo de inicialización, administración de usuarios, proyectos, accesos, tareas y encargados utilizando el mismo archivo SQLite.
+        - [ ] Verificar la inicialización mediante comando y la administración de usuarios, proyectos, accesos, tareas y encargados con ambos modos utilizando el mismo archivo SQLite.
         - [ ] Verificar la conservación de los cambios entre ejecuciones y su lectura desde ambos modos.
         - [ ] Verificar que CLI y TUI apliquen las mismas restricciones para contribuyentes, líderes, administradores y cuentas sin capacidades.
         - [ ] Verificar en ambos modos errores de persistencia, reversión de cambios agrupados, auditoría posterior al resultado y ausencia de datos sensibles en salidas y logs.
         - [ ] Ejecutar `cargo build --workspace`, `cargo test --workspace`, `cargo fmt --all -- --check` y `cargo clippy --workspace --all-targets`.
-
-## Decisiones pendientes
-
-- Precisar el conjunto de caracteres admitidos en las siglas, incluidas letras acentuadas, ñ y otros alfabetos (RF-12).
-- Precisar el tratamiento de los permisos tras eliminar su proyecto (CU-10).
-- Precisar cómo atribuir el usuario de auditoría en la inicialización sin identidad autenticada previa (CU-01, RF-09).
-- Precisar qué ocurre con el encargado que pierde acceso, si hay restricciones para revocar el propio acceso o el del creador y qué resultado tienen los permisos repetidos o inexistentes (CU-11).
-- Precisar el mecanismo interactivo de creación del administrador inicial exigido por RF-10 (CU-01).
