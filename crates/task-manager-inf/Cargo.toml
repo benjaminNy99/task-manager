@@ -1,0 +1,17 @@
+[package]
+name = "task-manager-inf"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+argon2 = "0.6"
+sea-orm = { version = "2", default-features = false, features = ["macros", "runtime-tokio", "sqlx-sqlite", "with-time"] }
+sea-orm-migration = { version = "2", default-features = false, features = ["runtime-tokio", "sqlx-sqlite"] }
+task-manager-app = { version = "0.1.0", path = "../task-manager-app" }
+task-manager-core = { version = "0.1.0", path = "../task-manager-core" }
+thiserror = "2"
+time = { version = "0.3", features = ["formatting"] }
+tokio = { version = "1", features = ["rt"] }
+tracing = "0.1"
+tracing-appender = "0.2"
+tracing-subscriber = { version = "0.3", features = ["env-filter", "time"] }

@@ -3,4 +3,14 @@ name = "task-manager"
 version = "0.1.0"
 edition = "2024"
 
+[workspace]
+members = ["crates/*"]
+resolver = "3"
+
 [dependencies]
+clap = { version = "4", features = ["derive"] }
+ratatui = "0.30"
+task-manager-app = { version = "0.1.0", path = "crates/task-manager-app" }
+task-manager-inf = { version = "0.1.0", path = "crates/task-manager-inf" }
+time = { version = "0.3", features = ["formatting"] }
+tokio = { version = "1", features = ["macros", "rt-multi-thread", "sync"] }
