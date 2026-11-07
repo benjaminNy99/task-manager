@@ -8,7 +8,7 @@
         - [x] Declarar las dependencias entre crates conforme a la arquitectura: ejecutable hacia `app` e `inf`, `app` hacia `core` e `inf` hacia ambos.
     - [ ] **Hito: Entidades y reglas de dominio validadas**
         - [x] Actualizar los requerimientos y casos de uso con las decisiones confirmadas sobre nombres y siglas de proyectos, unicidad y revocación de permisos, eliminación de proyectos e inicialización exclusiva por comando sin auditoría.
-        - [ ] Implementar la validación del nombre y la sigla del proyecto admitiendo únicamente letras de A a Z, en mayúsculas o minúsculas, y dígitos del 0 al 9, sin acentos ni ñ (RF-12).
+        - [x] Implementar la validación del nombre y la sigla del proyecto admitiendo únicamente letras de A a Z, en mayúsculas o minúsculas, y dígitos del 0 al 9, sin acentos ni ñ (RF-12).
         - [ ] Modelar usuarios con identificador, nombre, contraseña protegida, bloqueo y tres indicadores booleanos de rol (RF-14, RF-16, RF-29).
         - [ ] Implementar la validación de nombres de usuario con letras ASCII y dígitos, y su comparación sin distinguir mayúsculas (RF-14).
         - [ ] Implementar las capacidades acumulativas de administrador, líder y contribuyente aunque los indicadores inferiores estén desactivados (RF-16).
